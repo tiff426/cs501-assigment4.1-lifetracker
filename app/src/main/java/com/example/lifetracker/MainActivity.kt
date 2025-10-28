@@ -8,7 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,11 +29,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
-//import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lifetracker.ui.theme.LifeTrackerTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -45,7 +41,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.launch
 import java.text.DateFormat
-
+import java.util.Calendar
+import java.util.Locale
 
 // custom data type for life cycle event so can store event + timestamp
 data class LifecycleEvent(val name:String, val timestamp: String, val color: Color)
@@ -72,29 +69,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LifeTrackerTheme {
-        Greeting("Android")
-    }
-}
-
+//@Composable
+//fun Greeting(name: String, modifier: Modifier = Modifier) {
+//    Text(
+//        text = "Hello $name!",
+//        modifier = modifier
+//    )
+//}
 //
-//• Use ViewModel to store a log of lifecycle events (e.g., onCreate, onStart, etc.).
-//• Capture and record these events using LifecycleObserver or lifecycle callbacks.
-//• Show real-time updates in the UI using a LazyColumn.
-//• Persist logs in memory during configuration changes.
-//• Include a timestamp and status color code for each event.
-//• Show a snackbar notification on a lifecycle transition (configurable via settings).
+//@Preview(showBackground = true)
+//@Composable
+//fun GreetingPreview() {
+//    LifeTrackerTheme {
+//        Greeting("Android")
+//    }
+//}
 
 @Composable
 fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, viewModel: MyViewModel = MyViewModel()) {
@@ -102,8 +91,6 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var snackbarSet by rememberSaveable { mutableStateOf(true) }
-
-//    val logList = viewModel.readLogList
 
     DisposableEffect(lifecycleOwner) {
         // Create an observer that logs lifecycle events.
@@ -127,10 +114,15 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
             } else if (event.name == "ON_DESTROY") {
                 color = Color.Gray
             }
-            val millis = System.currentTimeMillis()
-            val completeEvent = LifecycleEvent(event.name, DateFormat.getInstance().format(millis), color)
+            val calendar = Calendar.getInstance()
+            val hours = calendar.get(Calendar.HOUR_OF_DAY)
+            val minutes = calendar.get(Calendar.MINUTE)
+            val seconds = calendar.get(Calendar.SECOND)
+
+            // format as HH:mm:ss
+            val timestamp = String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
+            val completeEvent = LifecycleEvent(event.name, timestamp, color)
             viewModel.addLogMessage(completeEvent)
-            // viewModel.addLogMessage(event)
 
             // snackbar
             // not on button click, on this actual lifecycle transition
@@ -217,10 +209,3 @@ class MyViewModel: ViewModel() {
         editLogList.add(message)
     }
 }
-
-// on create
-// on start
-// on resume
-// on pause
-// on stop
-// on destroy
