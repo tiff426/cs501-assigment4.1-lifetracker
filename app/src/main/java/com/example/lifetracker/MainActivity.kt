@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -175,7 +176,7 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(viewModel.readLogList) { event ->
+                itemsIndexed(viewModel.readLogList) { index, event ->
                     //for (event in logList) {
                     Row(
                         modifier = Modifier
@@ -187,8 +188,10 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Spacer(modifier = Modifier.width(12.dp))
+                        val label = if (index == viewModel.readLogList.lastIndex)
+                            "CURRENT: ${event.name}" else event.name
                         Text(
-                            text = event.name,
+                            text = label,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
                         )
