@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -38,10 +43,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.launch
+import java.text.DateFormat
 
 
 // custom data type for life cycle event so can store event + timestamp
-data class LifecycleEvent(val name: String, val timestamp: String)
+data class LifecycleEvent(val name:String, val timestamp: String, val color: Color)
 class MainActivity : ComponentActivity() {
 
     private val TAG = "LifeTracker"
@@ -92,6 +99,10 @@ fun GreetingPreview() {
 @Composable
 fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, viewModel: MyViewModel = MyViewModel()) {
     val TAG = "LifeTracker"
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var snackbarSet by rememberSaveable { mutableStateOf(true) }
+
 //    val logList = viewModel.readLogList
 
     DisposableEffect(lifecycleOwner) {
@@ -101,8 +112,38 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
             // This shows how a Composable can react to the Activity's state.
             Log.d(TAG, "[Composable] Observed Event: ${event.name}")
             // also add it??
-            viewModel.addLogMessage(LifecycleEvent(event.name, System.currentTimeMillis().toString()))
+            // set up color
+            var color = Color.White
+            if (event.name == "ON_CREATE") {
+                color = Color.Green
+            } else if (event.name == "ON_START") {
+                color = Color.Yellow
+            } else if (event.name == "ON_RESUME") {
+                color = Color.Cyan
+            } else if (event.name == "ON_PAUSE") {
+                color = Color.Magenta
+            } else if (event.name == "ON_STOP") {
+                color = Color.Red
+            } else if (event.name == "ON_DESTROY") {
+                color = Color.Gray
+            }
+            val millis = System.currentTimeMillis()
+            val completeEvent = LifecycleEvent(event.name, DateFormat.getInstance().format(millis), color)
+            viewModel.addLogMessage(completeEvent)
             // viewModel.addLogMessage(event)
+
+            // snackbar
+            // not on button click, on this actual lifecycle transition
+            if (snackbarSet) {
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "lifecycle transitioned",
+                        actionLabel = "got it",
+                        duration = SnackbarDuration.Short,
+                        withDismissAction = true
+                    )
+                }
+            } // else do nothing
         }
 
         // Add the observer to the lifecycle of the owner (our Activity).
@@ -118,42 +159,63 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
     }
 
     // the UI...
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(viewModel.readLogList) { event ->
-        //for (event in logList) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-//                        MaterialTheme.colorScheme.surfaceVariant,
-//                        MaterialTheme.shapes.medium
-                        Color.Green
-                    )
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) })
+    { padding ->
+        Column(
+            modifier = Modifier.fillMaxSize()
+            .padding(padding)) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Color dot
-//                Box(
-//                    modifier = Modifier
-//                        .size(12.dp)
-//                        .background(event.color, MaterialTheme.shapes.small)
-//                )
+                Text("Settings")
+                Button({ snackbarSet = !snackbarSet }) {
+                    Text(
+                        if (snackbarSet) {
+                            "disable snackbar"
+                        } else {
+                            "enable snackbar"
+                        }
+                    )
+                }
+            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(viewModel.readLogList) { event ->
+                    //for (event in logList) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                //                        MaterialTheme.colorScheme.surfaceVariant,
+                                //                        MaterialTheme.shapes.medium
+                                event.color
+                            )
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Color dot
+                        //                Box(
+                        //                    modifier = Modifier
+                        //                        .size(12.dp)
+                        //                        .background(event.color, MaterialTheme.shapes.small)
+                        //                )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
-                // Event name
-                Text(
-                    text = event.name,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
+                        // Event name
+                        Text(
+                            text = event.name,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
 
-                // Timestamp
-                Text(text = event.timestamp)
+                        // Timestamp
+                        Text(text = event.timestamp)
+                    }
+                }
             }
         }
     }
@@ -168,3 +230,10 @@ class MyViewModel: ViewModel() {
         editLogList.add(message)
     }
 }
+
+// on create
+// on start
+// on resume
+// on pause
+// on stop
+// on destroy
