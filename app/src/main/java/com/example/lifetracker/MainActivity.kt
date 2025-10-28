@@ -189,30 +189,17 @@ fun LifeTracker(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current, vi
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
-                                //                        MaterialTheme.colorScheme.surfaceVariant,
-                                //                        MaterialTheme.shapes.medium
                                 event.color
                             )
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Color dot
-                        //                Box(
-                        //                    modifier = Modifier
-                        //                        .size(12.dp)
-                        //                        .background(event.color, MaterialTheme.shapes.small)
-                        //                )
-
                         Spacer(modifier = Modifier.width(12.dp))
-
-                        // Event name
                         Text(
                             text = event.name,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f)
                         )
-
-                        // Timestamp
                         Text(text = event.timestamp)
                     }
                 }
